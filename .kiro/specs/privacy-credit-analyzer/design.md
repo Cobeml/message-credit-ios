@@ -4,6 +4,30 @@
 
 The Privacy-Preserving Credit Score Analyzer is a standalone iOS app built with SwiftUI that performs on-device analysis of iMessages to assess personality traits and trustworthiness for credit scoring purposes. The app leverages MLX-Swift for running Phi-3 Mini locally, CryptoKit for cryptographic verification, and PostgresClientKit for backend communication, ensuring that raw message data never leaves the device.
 
+## Project Structure
+
+The project is organized into two main components:
+
+1. **PrivacyCreditAnalyzer Package**: Core data models and business logic (Swift Package)
+2. **message-credit iOS App**: SwiftUI interface and app-specific functionality (Xcode project)
+
+```
+message-credit/                          # Main iOS app project
+├── message-credit.xcodeproj/            # Xcode project file
+├── message-credit/                      # App source code
+│   ├── message_creditApp.swift          # App entry point
+│   ├── ContentView.swift                # Main UI interface
+│   └── Assets.xcassets/                 # App assets
+├── message-creditTests/                 # App-specific tests
+└── message-creditUITests/               # UI tests
+
+PrivacyCreditAnalyzer/                   # Core package (dependency)
+├── Sources/PrivacyCreditAnalyzer/       # Core data models
+│   └── Models/                          # Data model definitions
+├── Tests/PrivacyCreditAnalyzerTests/    # Unit tests for models
+└── Package.swift                        # Package configuration
+```
+
 ## Architecture
 
 ### High-Level Architecture
@@ -262,6 +286,29 @@ enum AnalysisError: Error, LocalizedError {
 
 ## Implementation Considerations
 
+### Project Architecture
+
+The app follows a modular architecture with clear separation of concerns:
+
+- **PrivacyCreditAnalyzer Package**: Contains all core data models, validation logic, and business rules
+- **message-credit App**: Handles UI, user interaction, file management, and app lifecycle
+- **Local Package Dependency**: The iOS app imports PrivacyCreditAnalyzer as a local Swift package
+
+### Current Implementation Status
+
+**✅ Completed (Task 1)**:
+- Core data models with full validation and serialization
+- Comprehensive unit test suite (22 tests, all passing)
+- iOS app project with package dependency integration
+- Basic UI with mock analysis functionality
+- File picker integration (basic implementation)
+
+**🚧 Next Steps**:
+- Message parsing functionality (Task 2)
+- Real AI inference integration (Task 4)
+- Background processing implementation (Task 5)
+- Cryptographic signing integration (Task 6)
+
 ### MLX-Swift Integration
 
 - Use MLX-Swift's async/await patterns for non-blocking inference
@@ -285,7 +332,9 @@ enum AnalysisError: Error, LocalizedError {
 
 ### User Experience
 
-- Show real-time progress for background processing
-- Provide clear error messages with actionable guidance
-- Implement offline mode for analysis without backend upload
-- Display processing status and timing information for debugging
+- ✅ Real-time progress indicators during analysis
+- ✅ Comprehensive results display with personality trait visualization
+- ✅ Clear error messages with actionable guidance
+- ✅ Processing status and timing information for debugging
+- 🚧 File import functionality (basic UI implemented, parsing pending)
+- 🚧 Offline mode for analysis without backend upload

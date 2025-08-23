@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		609CFD232E5A5714007EBCE0 /* PrivacyCreditAnalyzer in Frameworks */ = {isa = PBXBuildFile; productRef = 609CFD222E5A5714007EBCE0 /* PrivacyCreditAnalyzer */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		609CFD052E5A563F007EBCE0 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				609CFD232E5A5714007EBCE0 /* PrivacyCreditAnalyzer in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = "message-credit";
 			packageProductDependencies = (
+				609CFD222E5A5714007EBCE0 /* PrivacyCreditAnalyzer */,
 			);
 			productName = "message-credit";
 			productReference = 609CFCF72E5A563C007EBCE0 /* message-credit.app */;
@@ -195,6 +201,9 @@
 			);
 			mainGroup = 609CFCEE2E5A563C007EBCE0;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				609CFD212E5A5714007EBCE0 /* XCLocalSwiftPackageReference "../PrivacyCreditAnalyzer" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 609CFCF82E5A563C007EBCE0 /* Products */;
 			projectDirPath = "";
@@ -558,6 +567,20 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		609CFD212E5A5714007EBCE0 /* XCLocalSwiftPackageReference "../PrivacyCreditAnalyzer" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../PrivacyCreditAnalyzer;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		609CFD222E5A5714007EBCE0 /* PrivacyCreditAnalyzer */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PrivacyCreditAnalyzer;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 609CFCEF2E5A563C007EBCE0 /* Project object */;
 }
