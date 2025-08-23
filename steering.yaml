@@ -1,0 +1,9 @@
+language: swift
+frameworks: [SwiftUI, MLXSwift, CryptoKit, PostgresClientKit]
+tasks:
+  - generate-ui: "SwiftUI view with text input, file picker, and JSON output"
+  - integrate-imessage: "Parse iMessage text from Messages Export or user input"
+  - integrate-llm: "Load Phi-3 Mini via MLX-Swift for on-device inference"
+  - add-verification: "Sign JSON with CryptoKit SHA256 and private key"
+  - connect-db: "Send JSON to PostgreSQL via PostgresClientKit"
+  - test: "Validate 100% accuracy on synthetic dataset"
