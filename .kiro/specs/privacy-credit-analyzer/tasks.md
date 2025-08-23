@@ -8,20 +8,20 @@
   - ✅ Create basic ContentView with mock analysis functionality
   - _Requirements: 1.1, 1.3, 3.1, 3.2, 3.3_
 
-- [ ] 2. Implement message input and parsing functionality
-  - [ ] 2.1 Create Messages Export JSON parser
+- [x] 2. Implement message input and parsing functionality
+  - [x] 2.1 Create Messages Export JSON parser
     - Write MessagesExportParser class to parse Messages Export JSON format
     - Implement error handling for malformed JSON and missing fields
     - Create unit tests for various Messages Export file formats
     - _Requirements: 1.2, 6.1_
 
-  - [ ] 2.2 Implement manual text input handler
+  - [x] 2.2 Implement manual text input handler
     - Create ManualInputHandler to convert raw text into Message objects
     - Add text preprocessing and message boundary detection
     - Write unit tests for text parsing edge cases
     - _Requirements: 1.1, 1.3_
 
-  - [ ] 2.3 Build message filtering engine
+  - [x] 2.3 Build message filtering engine
     - Implement MessageFilterEngine with loved ones detection logic
     - Add financial keyword filtering and relationship scoring
     - Create unit tests for filtering strategies and accuracy

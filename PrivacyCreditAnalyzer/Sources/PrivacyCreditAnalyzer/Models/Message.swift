@@ -1,7 +1,7 @@
 import Foundation
 
 /// Represents a single message from iMessages
-public struct Message: Codable, Identifiable, Equatable {
+public struct Message: Codable, Identifiable, Equatable, Hashable {
     public let id: UUID
     public let content: String
     public let timestamp: Date
