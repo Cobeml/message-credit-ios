@@ -1,0 +1,4 @@
+module PrivacyCreditAnalyzer {
+    header "/Users/cobeliu/Developing/message-credit/PrivacyCreditAnalyzer/.build/arm64-apple-macosx/debug/PrivacyCreditAnalyzer.build/PrivacyCreditAnalyzer-Swift.h"
+    requires objc
+}

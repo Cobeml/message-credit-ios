@@ -1,0 +1,11 @@
+{
+  "": {
+    "swift-dependencies": "/Users/cobeliu/Developing/message-credit/PrivacyCreditAnalyzer/.build/arm64-apple-macosx/debug/PrivacyCreditAnalyzerTests.build/master.swiftdeps"
+  },
+  "/Users/cobeliu/Developing/message-credit/PrivacyCreditAnalyzer/Tests/PrivacyCreditAnalyzerTests/DataModelTests.swift": {
+    "dependencies": "/Users/cobeliu/Developing/message-credit/PrivacyCreditAnalyzer/.build/arm64-apple-macosx/debug/PrivacyCreditAnalyzerTests.build/DataModelTests.d",
+    "object": "/Users/cobeliu/Developing/message-credit/PrivacyCreditAnalyzer/.build/arm64-apple-macosx/debug/PrivacyCreditAnalyzerTests.build/DataModelTests.swift.o",
+    "swiftmodule": "/Users/cobeliu/Developing/message-credit/PrivacyCreditAnalyzer/.build/arm64-apple-macosx/debug/PrivacyCreditAnalyzerTests.build/DataModelTests~partial.swiftmodule",
+    "swift-dependencies": "/Users/cobeliu/Developing/message-credit/PrivacyCreditAnalyzer/.build/arm64-apple-macosx/debug/PrivacyCreditAnalyzerTests.build/DataModelTests.swiftdeps"
+  }
+}
