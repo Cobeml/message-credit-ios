@@ -1,6 +1,6 @@
 # Implementation Plan
 
-- [-] 1. Set up iOS project structure and core data models
+- [ ] 1. Set up iOS project structure and core data models
   - Create new iOS SwiftUI project with proper bundle identifier and capabilities
   - Define core data models (Message, PersonalityTraits, TrustworthinessScore, AnalysisResult, SignedResult)
   - Create unit tests for data model validation and serialization
