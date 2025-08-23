@@ -4,7 +4,8 @@ import PackageDescription
 let package = Package(
     name: "PrivacyCreditAnalyzer",
     platforms: [
-        .iOS(.v17)
+        .iOS(.v17),
+        .macOS("13.3")
     ],
     products: [
         .library(
@@ -13,14 +14,19 @@ let package = Package(
         ),
     ],
     dependencies: [
-        // Future dependencies will be added here:
-        // - MLX-Swift for on-device AI inference
+        .package(url: "https://github.com/ml-explore/mlx-swift.git", from: "0.18.0"),
+        // Future dependencies:
         // - PostgresClientKit for database communication
     ],
     targets: [
         .target(
             name: "PrivacyCreditAnalyzer",
-            dependencies: [],
+            dependencies: [
+                .product(name: "MLX", package: "mlx-swift"),
+                .product(name: "MLXNN", package: "mlx-swift"),
+                .product(name: "MLXOptimizers", package: "mlx-swift"),
+                .product(name: "MLXRandom", package: "mlx-swift")
+            ],
             path: "Sources"
         ),
         .testTarget(

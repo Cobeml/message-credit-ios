@@ -33,9 +33,22 @@
 		609CFD0E2E5A563F007EBCE0 /* message-creditUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "message-creditUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		609CFD2C2E5A6CD2007EBCE0 /* Exceptions for "message-credit" folder in "message-credit" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 609CFCF62E5A563C007EBCE0 /* message-credit */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		609CFCF92E5A563C007EBCE0 /* message-credit */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				609CFD2C2E5A6CD2007EBCE0 /* Exceptions for "message-credit" folder in "message-credit" target */,
+			);
 			path = "message-credit";
 			sourceTree = "<group>";
 		};

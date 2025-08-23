@@ -95,10 +95,10 @@ struct ShortcutsHelpView: View {
                             .font(.headline)
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            TipRow(icon: "shield.checkered", text: "All processing happens on your device for privacy")
-                            TipRow(icon: "clock", text: "Choose Quick analysis for daily check-ins")
-                            TipRow(icon: "chart.bar", text: "Use Deep analysis for comprehensive reports")
-                            TipRow(icon: "battery.100", text: "Ensure sufficient battery for larger analyses")
+                            HelpTipRow(icon: "shield.checkered", text: "All processing happens on your device for privacy")
+                            HelpTipRow(icon: "clock", text: "Choose Quick analysis for daily check-ins")
+                            HelpTipRow(icon: "chart.bar", text: "Use Deep analysis for comprehensive reports")
+                            HelpTipRow(icon: "battery.100", text: "Ensure sufficient battery for larger analyses")
                         }
                     }
                 }
@@ -237,7 +237,7 @@ struct InstallationStepCard: View {
     }
 }
 
-struct TipRow: View {
+struct HelpTipRow: View {
     let icon: String
     let text: String
     
