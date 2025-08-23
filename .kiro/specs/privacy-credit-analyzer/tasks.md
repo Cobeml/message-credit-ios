@@ -27,6 +27,36 @@
     - Create unit tests for filtering strategies and accuracy
     - _Requirements: 6.1, 6.2, 6.5_
 
+- [x] 2.5. Implement iOS Shortcuts integration for streamlined message import
+  - [x] 2.5.1 Create iOS Shortcut for message extraction with smart limits
+    - Design and build custom iOS Shortcut that can access Messages app data
+    - Implement user permission requests and privacy-compliant data access
+    - Add conversation selection and time range filtering options (7/30/90 days)
+    - Create message limit enforcement (max 1,000 per conversation, 5,000 total)
+    - Implement smart prioritization for financial conversations and recent messages
+    - Add data size validation and compression for efficient sharing (max 10MB)
+    - Create message formatting and data preparation for app sharing
+    - _Requirements: 1.5.1, 1.5.2, 1.5.3, 1.5.4, 1.5.5, 1.5.6_
+
+  - [x] 2.5.2 Add Shortcuts data handling in main app with validation
+    - Implement URL scheme registration for receiving Shortcut data
+    - Create ShortcutsDataHandler to process and validate incoming message data
+    - Add data size and message count validation with user feedback
+    - Implement smart sampling when data exceeds optimal limits
+    - Add automatic input field population and analysis trigger
+    - Create error handling for oversized datasets and timeout scenarios
+    - Write unit tests for Shortcuts data parsing, validation, and sampling
+    - _Requirements: 1.5.7, 1.5.8, 1.5.9_
+
+  - [x] 2.5.3 Create Shortcut installation and user guidance with performance options
+    - Build in-app Shortcut installation flow with step-by-step instructions
+    - Add user guidance for setting up and running different Shortcut variants
+    - Create performance recommendations (Quick: 200 messages, Standard: 1,000, Deep: 5,000)
+    - Implement Shortcut version management and updates
+    - Add troubleshooting help for common Shortcuts issues and limits
+    - Create user education about message limits and processing trade-offs
+    - _Requirements: 1.5.1, 1.5.5, 1.5.9_
+
 - [ ] 3. Create basic SwiftUI interface with debugging capabilities
   - [ ] 3.1 Build main app interface
     - ✅ Create ContentView with text input field and file picker button

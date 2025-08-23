@@ -41,18 +41,22 @@ graph TB
     B --> E[Messages Export Parser]
     B --> F[Manual Text Input Handler]
     B --> G[Message Filter Engine]
+    B --> H[Shortcuts Data Handler]
     
-    C --> H[MLX-Swift Inference Engine]
-    C --> I[Prompt Engineering Module]
-    C --> J[Background Processing Manager]
+    I[iOS Shortcuts] --> H
+    I --> J[Messages App Access]
     
-    D --> K[JSON Formatter]
-    D --> L[CryptoKit Signing Service]
-    D --> M[PostgreSQL Client]
+    C --> K[MLX-Swift Inference Engine]
+    C --> L[Prompt Engineering Module]
+    C --> M[Background Processing Manager]
     
-    H --> N[Phi-3 Mini Model]
-    L --> O[Device Keychain]
-    M --> P[Remote PostgreSQL Database]
+    D --> N[JSON Formatter]
+    D --> O[CryptoKit Signing Service]
+    D --> P[PostgreSQL Client]
+    
+    K --> Q[Phi-3 Mini Model]
+    O --> R[Device Keychain]
+    P --> S[Remote PostgreSQL Database]
 ```
 
 ### Core Components
@@ -74,6 +78,8 @@ graph TB
 - `MessagesExportParser`: Parses Messages Export JSON files
 - `ManualInputHandler`: Processes manually entered text
 - `MessageFilterEngine`: Implements intelligent filtering logic
+- `ShortcutsDataHandler`: Processes data received from iOS Shortcuts
+- `ShortcutInstaller`: Manages Shortcut installation and user guidance
 
 **Interfaces**:
 ```swift
@@ -81,6 +87,13 @@ protocol MessageInputProtocol {
     func parseMessagesExport(from url: URL) async throws -> [Message]
     func parseManualInput(_ text: String) -> [Message]
     func filterMessages(_ messages: [Message], strategy: FilterStrategy) -> [Message]
+    func handleShortcutsData(_ data: Data) async throws -> [Message]
+}
+
+protocol ShortcutsIntegrationProtocol {
+    func installShortcut() async throws -> Bool
+    func handleIncomingShortcutData(_ url: URL) async throws -> [Message]
+    func validateShortcutData(_ data: Data) throws -> Bool
 }
 
 enum FilterStrategy {
@@ -130,7 +143,85 @@ protocol CryptoServiceProtocol {
 }
 ```
 
-### 4. PostgreSQL Communication Layer
+### 4. iOS Shortcuts Integration Layer
+
+**Purpose**: Streamlined message import using iOS Shortcuts for enhanced user experience
+
+**Key Classes**:
+- `ShortcutsDataHandler`: Processes incoming data from iOS Shortcuts
+- `ShortcutInstaller`: Manages Shortcut installation and user guidance
+- `MessageAccessManager`: Handles Messages app data access permissions
+- `ShortcutValidator`: Validates and sanitizes Shortcut-provided data
+
+**Interfaces**:
+```swift
+protocol ShortcutsIntegrationProtocol {
+    func installShortcut() async throws -> Bool
+    func handleIncomingShortcutData(_ url: URL) async throws -> [Message]
+    func validateShortcutData(_ data: Data) throws -> Bool
+    func requestMessagesPermission() async throws -> Bool
+    func applySampling(to messages: [Message], targetCount: Int) -> [Message]
+}
+
+struct ShortcutConfiguration {
+    let name: String
+    let version: String
+    
+    // Message Limits
+    let maxMessagesPerConversation: Int = 1000
+    let maxTotalMessages: Int = 5000
+    let maxDataSizeBytes: Int = 10 * 1024 * 1024  // 10MB
+    
+    // Time Range Options
+    let quickAnalysisRange: TimeInterval = 7 * 24 * 60 * 60      // 7 days (~200 messages)
+    let standardAnalysisRange: TimeInterval = 30 * 24 * 60 * 60  // 30 days (~1,000 messages)
+    let deepAnalysisRange: TimeInterval = 90 * 24 * 60 * 60      // 90 days (~5,000 messages)
+    
+    // Performance Tiers
+    let performanceTiers: [PerformanceTier] = [
+        PerformanceTier(name: "Quick", messageLimit: 200, timeRange: quickAnalysisRange),
+        PerformanceTier(name: "Standard", messageLimit: 1000, timeRange: standardAnalysisRange),
+        PerformanceTier(name: "Deep", messageLimit: 5000, timeRange: deepAnalysisRange)
+    ]
+}
+
+struct PerformanceTier {
+    let name: String
+    let messageLimit: Int
+    let timeRange: TimeInterval
+    let estimatedProcessingTime: TimeInterval
+    let recommendedFor: String
+}
+
+enum ShortcutDataError: Error {
+    case tooManyMessages(count: Int, limit: Int)
+    case dataSizeTooLarge(size: Int, limit: Int)
+    case timeoutDuringExtraction
+    case insufficientPermissions
+    case invalidDataFormat
+    case samplingRequired(originalCount: Int, targetCount: Int)
+}
+```
+
+**Shortcut Workflow**:
+1. User runs custom iOS Shortcut and selects performance tier (Quick/Standard/Deep)
+2. Shortcut requests Messages app access permission
+3. User selects conversations and time range based on chosen tier
+4. Shortcut applies smart filtering to prioritize financial conversations
+5. Shortcut extracts messages with enforced limits (max 1,000 per conversation, 5,000 total)
+6. Shortcut validates data size (max 10MB) and applies compression if needed
+7. Shortcut formats and shares data with main app via secure URL scheme
+8. App receives data, validates limits, and applies sampling if necessary
+9. App populates input field and offers immediate analysis with processing time estimate
+
+**Smart Filtering Logic**:
+- Prioritize conversations with financial keywords (money, loan, payment, etc.)
+- Weight recent messages higher than older ones
+- Include conversations with high message frequency (close relationships)
+- Sample evenly across time periods if limits are exceeded
+- Preserve conversation context by keeping message sequences intact
+
+### 5. PostgreSQL Communication Layer
 
 **Purpose**: Secure communication with backend database
 
@@ -283,6 +374,66 @@ enum AnalysisError: Error, LocalizedError {
 2. **Local Storage Tests**: Ensure no sensitive data persists locally
 3. **Network Traffic Analysis**: Monitor all outbound communications
 4. **Cryptographic Verification Tests**: Validate signature integrity
+
+## iOS Shortcuts Performance and User Experience
+
+### Performance Tiers and Recommendations
+
+**Quick Analysis (200 messages, 7 days)**:
+- **Use Case**: Fast daily check-ins, recent financial activity
+- **Processing Time**: ~30 seconds
+- **Memory Usage**: ~5MB
+- **Recommended For**: Users wanting immediate insights
+
+**Standard Analysis (1,000 messages, 30 days)**:
+- **Use Case**: Monthly financial behavior assessment
+- **Processing Time**: ~2-3 minutes
+- **Memory Usage**: ~15-25MB
+- **Recommended For**: Regular credit monitoring
+
+**Deep Analysis (5,000 messages, 90 days)**:
+- **Use Case**: Comprehensive creditworthiness evaluation
+- **Processing Time**: ~5-10 minutes (background processing)
+- **Memory Usage**: ~50-75MB
+- **Recommended For**: Loan applications, major financial decisions
+
+### Smart Sampling Algorithm
+
+When message counts exceed optimal limits, the system applies intelligent sampling:
+
+```swift
+func applySampling(messages: [Message], targetCount: Int) -> [Message] {
+    // 1. Prioritize financial conversations (40% weight)
+    let financialMessages = messages.filter { containsFinancialKeywords($0.content) }
+    
+    // 2. Prioritize recent messages (30% weight)
+    let recentMessages = messages.sorted { $0.timestamp > $1.timestamp }.prefix(targetCount / 2)
+    
+    // 3. Ensure conversation diversity (20% weight)
+    let diverseConversations = sampleAcrossConversations(messages, targetCount: targetCount / 3)
+    
+    // 4. Maintain temporal distribution (10% weight)
+    let temporalSample = sampleAcrossTimeRange(messages, targetCount: targetCount / 5)
+    
+    return combineAndDeduplicate([financialMessages, recentMessages, diverseConversations, temporalSample])
+        .prefix(targetCount)
+}
+```
+
+### User Experience Guidelines
+
+**Shortcut Installation Flow**:
+1. Show performance tier comparison table
+2. Explain message limits and processing times
+3. Guide user through iOS Shortcuts app installation
+4. Provide step-by-step setup instructions
+5. Test connection with small sample
+
+**Error Handling and User Feedback**:
+- Clear progress indicators during message extraction
+- Helpful error messages with suggested solutions
+- Automatic fallback to smaller datasets when limits exceeded
+- Option to retry with different parameters
 
 ## Implementation Considerations
 

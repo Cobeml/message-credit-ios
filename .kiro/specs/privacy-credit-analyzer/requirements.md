@@ -18,6 +18,22 @@ This feature involves building a standalone iOS app in SwiftUI that performs pri
 4. WHEN the user provides a large message volume THEN the system SHALL offer processing options (all messages, loved ones only, or background processing)
 5. WHEN processing all messages THEN the system SHALL run analysis in background to avoid blocking the UI
 
+### Requirement 1.5
+
+**User Story:** As a user, I want to use iOS Shortcuts to streamline message import from iMessages, so that I can quickly gather recent conversations without manual copy-paste.
+
+#### Acceptance Criteria
+
+1. WHEN the user installs the app THEN the system SHALL provide a custom iOS Shortcut for message extraction
+2. WHEN the user runs the Shortcut THEN the system SHALL request permission to access recent Messages data
+3. WHEN the Shortcut accesses Messages THEN the system SHALL allow user to select specific conversations or time ranges
+4. WHEN the Shortcut processes messages THEN the system SHALL limit extraction to maximum 5,000 messages per session
+5. WHEN the Shortcut offers time ranges THEN the system SHALL provide options for 7 days (200 messages), 30 days (1,000 messages), and 90 days (5,000 messages)
+6. WHEN the Shortcut processes large datasets THEN the system SHALL prioritize conversations with financial keywords and high message frequency
+7. WHEN the Shortcut completes THEN the system SHALL format message data and share it with the main app via secure URL scheme
+8. WHEN the app receives Shortcut data THEN the system SHALL validate data size limits (maximum 10MB) and automatically populate the input field
+9. WHEN data exceeds limits THEN the system SHALL offer smart sampling options to reduce dataset while maintaining analysis quality
+
 ### Requirement 2
 
 **User Story:** As a user, I want my messages to be processed on-device with AI analysis, so that my personal financial data never leaves my iPhone.
