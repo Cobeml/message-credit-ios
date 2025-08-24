@@ -19,6 +19,26 @@ public class MLXInferenceEngine: ObservableObject {
     private let promptEngineer: PromptEngineer
     private var currentAnalysisTask: Task<Void, Never>?
     
+    // MARK: - Environment Detection
+    
+    /// Detects if running in iOS Simulator (MLX incompatible environment)
+    public static var isSimulatorEnvironment: Bool {
+        #if targetEnvironment(simulator)
+        return true
+        #else
+        return false
+        #endif
+    }
+    
+    /// Detects if current device supports MLX (Apple Silicon + physical device)
+    public static var isMLXCompatibleDevice: Bool {
+        guard !isSimulatorEnvironment else { return false }
+        
+        // Additional checks for Apple Silicon can be added here
+        // For now, we assume all non-simulator devices are compatible
+        return true
+    }
+    
     // Analysis configuration
     private let maxRetries = 5 // Increased for long-running tasks
     private let inferenceTimeout: TimeInterval = 600 // 10 minutes for batch processing
@@ -29,26 +49,59 @@ public class MLXInferenceEngine: ObservableObject {
     public init() {
         self.modelManager = ModelManager()
         self.promptEngineer = PromptEngineer()
+        
+        // Early initialization check for simulator environment
+        if Self.isSimulatorEnvironment {
+            print("🚨 MLX COMPATIBILITY WARNING:")
+            print("📱 Running in iOS Simulator - MLX framework is not supported")
+            print("🔧 MLX requires physical Apple devices with Metal GPU support")
+            print("✨ App will use enhanced mock analysis for development")
+            print("📲 Deploy to a physical iOS device for real MLX inference")
+            
+            analysisStatus = "Simulator Mode - Mock Analysis Only"
+        }
     }
     
     // MARK: - Public Interface
     
     /// Initializes the inference engine by loading the model
     public func initialize() async throws {
-        await updateStatus(0.0, "Initializing MLX inference engine...")
+        // CRITICAL: Prevent MLX initialization in simulator environments
+        guard !Self.isSimulatorEnvironment else {
+            await MainActor.run {
+                isInitialized = false // Explicitly set to false
+                analysisStatus = "Simulator Mode - MLX Not Available"
+                print("✅ Simulator mode initialized - using mock analysis")
+            }
+            return // Exit early without attempting MLX initialization
+        }
+        
+        // Additional device compatibility check
+        guard Self.isMLXCompatibleDevice else {
+            let error = InferenceError.deviceThrottling("Device not compatible with MLX framework")
+            await MainActor.run {
+                self.lastError = error
+                analysisStatus = "Device Incompatible"
+            }
+            throw error
+        }
+        
+        await updateStatus(0.0, "Initializing MLX inference engine on physical device...")
         
         do {
             try await modelManager.loadModel()
             
             await MainActor.run {
                 isInitialized = true
-                analysisStatus = "Ready for analysis"
+                analysisStatus = "MLX Ready on Device"
+                print("✅ MLX inference engine successfully initialized on physical device")
             }
             
         } catch {
             await MainActor.run {
                 lastError = error as? InferenceError ?? .initializationFailed(error.localizedDescription)
-                analysisStatus = "Initialization failed"
+                analysisStatus = "MLX Initialization Failed"
+                print("❌ MLX initialization failed: \(error.localizedDescription)")
             }
             throw error
         }
@@ -56,6 +109,12 @@ public class MLXInferenceEngine: ObservableObject {
     
     /// Performs complete personality analysis on provided messages
     public func analyzePersonality(messages: [Message]) async throws -> PersonalityTraits {
+        // Handle simulator environment with mock analysis
+        if Self.isSimulatorEnvironment {
+            await updateStatus(0.1, "Generating mock personality analysis...")
+            return try await generateMockPersonalityTraits(for: messages)
+        }
+        
         guard isInitialized else {
             throw InferenceError.engineNotInitialized
         }
@@ -81,6 +140,12 @@ public class MLXInferenceEngine: ObservableObject {
     
     /// Calculates trustworthiness score based on messages and personality traits
     public func calculateTrustworthiness(messages: [Message], traits: PersonalityTraits) async throws -> TrustworthinessScore {
+        // Handle simulator environment with mock analysis
+        if Self.isSimulatorEnvironment {
+            await updateStatus(0.1, "Generating mock trustworthiness analysis...")
+            return try await generateMockTrustworthinessScore(for: messages, traits: traits)
+        }
+        
         guard isInitialized else {
             throw InferenceError.engineNotInitialized
         }
