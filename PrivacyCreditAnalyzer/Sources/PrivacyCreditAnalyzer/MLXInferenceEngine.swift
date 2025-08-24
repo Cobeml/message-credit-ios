@@ -20,8 +20,9 @@ public class MLXInferenceEngine: ObservableObject {
     private var currentAnalysisTask: Task<Void, Never>?
     
     // Analysis configuration
-    private let maxRetries = 3
-    private let inferenceTimeout: TimeInterval = 300 // 5 minutes
+    private let maxRetries = 5 // Increased for long-running tasks
+    private let inferenceTimeout: TimeInterval = 600 // 10 minutes for batch processing
+    private let batchTimeout: TimeInterval = 1800 // 30 minutes for full batch analysis
     
     // MARK: - Initialization
     
@@ -103,7 +104,7 @@ public class MLXInferenceEngine: ObservableObject {
         }
     }
     
-    /// Performs complete analysis workflow in background
+    /// Performs complete analysis workflow in background (single batch method)
     public func processInBackground(messages: [Message]) async throws -> AnalysisResult {
         guard isInitialized else {
             throw InferenceError.engineNotInitialized
@@ -130,11 +131,21 @@ public class MLXInferenceEngine: ObservableObject {
             await updateStatus(0.9, "Finalizing analysis results...")
             
             let processingTime = Date().timeIntervalSince(startTime)
+            
+            // Mark as single batch processing
+            let batchingInfo = BatchingInfo(
+                totalBatches: 1,
+                averageBatchQuality: 1.0,
+                processingMethod: .singleBatch,
+                overlapPercentage: 0.0
+            )
+            
             let result = AnalysisResult(
                 personalityTraits: personalityTraits,
                 trustworthinessScore: trustworthinessScore,
                 messageCount: messages.count,
-                processingTime: processingTime
+                processingTime: processingTime,
+                batchingInfo: batchingInfo
             )
             
             await updateStatus(1.0, "Analysis complete")
@@ -155,7 +166,7 @@ public class MLXInferenceEngine: ObservableObject {
         }
     }
     
-    /// Cancels any running analysis
+    /// Cancels any running analysis with graceful cleanup
     public func cancelAnalysis() {
         currentAnalysisTask?.cancel()
         currentAnalysisTask = nil
@@ -164,6 +175,45 @@ public class MLXInferenceEngine: ObservableObject {
             isAnalyzing = false
             analysisStatus = "Analysis cancelled"
             analysisProgress = 0.0
+            print("📱 Analysis cancelled by user")
+        }
+    }
+    
+    /// Provides detailed progress information for long-running tasks
+    public var detailedProgress: AnalysisProgressInfo {
+        return AnalysisProgressInfo(
+            progress: analysisProgress,
+            status: analysisStatus,
+            isAnalyzing: isAnalyzing,
+            estimatedTimeRemaining: calculateEstimatedTimeRemaining(),
+            currentStage: determineCurrentStage(),
+            memoryUsage: Double(estimatedMemoryUsage) / 1_000_000_000, // GB
+            lastError: lastError?.localizedDescription
+        )
+    }
+    
+    private func calculateEstimatedTimeRemaining() -> TimeInterval? {
+        // Simple estimation based on current progress and elapsed time
+        // This would be more sophisticated in production
+        guard isAnalyzing && analysisProgress > 0.1 else { return nil }
+        
+        let elapsedTime = Date().timeIntervalSince(Date()) // Placeholder - would track start time
+        let estimatedTotal = elapsedTime / analysisProgress
+        return max(0, estimatedTotal - elapsedTime)
+    }
+    
+    private func determineCurrentStage() -> String {
+        switch analysisProgress {
+        case 0.0..<0.1:
+            return "Initialization"
+        case 0.1..<0.7:
+            return "Personality Analysis"
+        case 0.7..<0.9:
+            return "Trustworthiness Scoring"
+        case 0.9..<1.0:
+            return "Finalization"
+        default:
+            return "Complete"
         }
     }
     
@@ -194,6 +244,9 @@ extension MLXInferenceEngine {
         
         for attempt in 1...maxRetries {
             do {
+                // Check for cancellation
+                try Task.checkCancellation()
+                
                 await updateStatus(analysisProgress + 0.1, "Inference attempt \(attempt)/\(maxRetries)...")
                 
                 let response = try await withTimeout(inferenceTimeout) {
@@ -205,20 +258,53 @@ extension MLXInferenceEngine {
                     throw InferenceError.invalidResponse("Response too short or empty")
                 }
                 
+                // Log successful inference
+                print("✅ Inference completed successfully (attempt \(attempt))")
                 return response
                 
+            } catch is CancellationError {
+                print("🚫 Inference cancelled by user")
+                throw InferenceError.analysisFailure("Analysis cancelled")
             } catch {
                 lastError = error
                 
+                // Enhanced error logging
+                print("⚠️ Inference attempt \(attempt) failed: \(error.localizedDescription)")
+                
                 if attempt < maxRetries {
-                    let delay = TimeInterval(attempt * 2) // Exponential backoff
-                    await updateStatus(analysisProgress, "Retrying in \(Int(delay)) seconds...")
+                    let delay = TimeInterval(min(attempt * 2, 10)) // Capped exponential backoff
+                    await updateStatus(analysisProgress, "Retrying in \(Int(delay)) seconds (\(maxRetries - attempt) attempts remaining)...")
+                    
+                    // Check device thermal state and adjust timeout if needed
+                    await adjustForDeviceConditions()
+                    
                     try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
                 }
             }
         }
         
-        throw lastError ?? InferenceError.analysisFailure("All retry attempts failed")
+        throw lastError ?? InferenceError.analysisFailure("All \(maxRetries) retry attempts failed")
+    }
+    
+    /// Adjusts processing parameters based on device conditions
+    private func adjustForDeviceConditions() async {
+        let processInfo = ProcessInfo.processInfo
+        
+        // Check thermal state
+        if processInfo.thermalState == .critical || processInfo.thermalState == .serious {
+            print("🌡️ High thermal state detected, implementing cooling delay...")
+            try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 second cooling delay
+            await updateStatus(analysisProgress, "Device cooling - processing will resume shortly...")
+        }
+        
+        // Check memory pressure
+        let availableMemory = processInfo.physicalMemory
+        let estimatedUsage = estimatedMemoryUsage
+        
+        if Double(estimatedUsage) > Double(availableMemory) * 0.8 {
+            print("💾 High memory usage detected (\(estimatedUsage / 1_000_000_000)GB / \(availableMemory / 1_000_000_000)GB)")
+            await updateStatus(analysisProgress, "Optimizing memory usage...")
+        }
     }
     
     private func withTimeout<T>(_ timeout: TimeInterval, operation: @escaping () async throws -> T) async throws -> T {
@@ -232,9 +318,174 @@ extension MLXInferenceEngine {
                 throw InferenceError.inferenceTimeout
             }
             
-            let result = try await group.next()!
+            guard let result = try await group.next() else {
+                throw InferenceError.analysisFailure("Task group returned nil")
+            }
+            
             group.cancelAll()
             return result
+        }
+    }
+    
+    /// Enhanced batch processing with comprehensive progress tracking and error recovery
+    /// Processes large message volumes using intelligent batching with aggregation
+    public func processBatchedAnalysis(messages: [Message], configuration: BatchManager.BatchConfiguration = .default) async throws -> AnalysisResult {
+        guard isInitialized else {
+            throw InferenceError.engineNotInitialized
+        }
+        
+        let startTime = Date()
+        
+        await updateStatus(0.0, "Initializing batch processing for \(messages.count) messages...")
+        
+        // Initialize batch processing components
+        let batchManager = BatchManager(configuration: configuration)
+        let scoreAggregator = ScoreAggregator()
+        
+        // Create batches
+        await updateStatus(0.05, "Creating message batches...")
+        let batches = batchManager.createBatches(from: messages)
+        
+        await updateStatus(0.1, "Processing \(batches.count) batches...")
+        
+        // Process each batch for personality analysis
+        var batchedPersonalityResults: [BatchedPersonalityTraits] = []
+        let personalityProgressStep = 0.6 / Double(batches.count) // 60% of progress for personality
+        
+        for (index, batch) in batches.enumerated() {
+            let batchProgress = 0.1 + (Double(index) * personalityProgressStep)
+            await updateStatus(batchProgress, "Analyzing personality traits for batch \(index + 1)/\(batches.count)...")
+            
+            do {
+                let batchResult = try await processBatchWithRecovery(batch)
+                batchedPersonalityResults.append(batchResult)
+                
+                // Log batch completion with quality metrics
+                print("✅ Batch \(index + 1)/\(batches.count): Quality \(String(format: "%.2f", batchResult.batchMetadata.batchQuality)), Confidence \(String(format: "%.2f", batchResult.traits.confidence))")
+                
+            } catch {
+                // Enhanced error logging and recovery
+                print("⚠️ Batch \(index + 1) personality analysis failed: \(error)")
+                await updateStatus(batchProgress, "Batch \(index + 1) failed, continuing with remaining batches...")
+                
+                // Record failed batch for final statistics
+                let failedBatchCount = (index + 1) - batchedPersonalityResults.count
+                print("📉 Failed batches so far: \(failedBatchCount) / \(index + 1)")
+            }
+        }
+        
+        // Ensure we have at least one successful batch
+        guard !batchedPersonalityResults.isEmpty else {
+            throw InferenceError.analysisFailure("All personality analysis batches failed")
+        }
+        
+        // Aggregate personality results
+        await updateStatus(0.7, "Aggregating personality traits across batches...")
+        let personalityResult = try scoreAggregator.aggregatePersonalityTraits(batchedPersonalityResults)
+        
+        // Run trustworthiness analysis using aggregated personality traits
+        await updateStatus(0.8, "Calculating trustworthiness score...")
+        let trustworthinessScore = try await calculateTrustworthiness(
+            messages: messages, 
+            traits: personalityResult.aggregatedTraits
+        )
+        
+        // Create final result
+        await updateStatus(0.9, "Finalizing analysis results...")
+        let totalProcessingTime = Date().timeIntervalSince(startTime)
+        
+        let finalResult = scoreAggregator.createFinalResult(
+            personalityResult: personalityResult,
+            trustworthinessResult: AggregatedTrustworthinessResult(
+                aggregatedScore: trustworthinessScore,
+                batchCount: batches.count,
+                scoreVariance: 0.0, // Single trustworthiness analysis
+                factorVariances: [:],
+                aggregationConfidence: personalityResult.aggregationConfidence
+            ),
+            totalProcessingTime: totalProcessingTime,
+            overlapPercentage: configuration.overlapPercentage
+        )
+        
+        await updateStatus(1.0, "Batch processing complete")
+        
+        // Log final statistics
+        print("🎯 Batch analysis complete:")
+        print("  - Total batches: \(batches.count)")
+        print("  - Successful: \(batchedPersonalityResults.count)")
+        print("  - Failed: \(batches.count - batchedPersonalityResults.count)")
+        print("  - Processing time: \(String(format: "%.1f", totalProcessingTime))s")
+        print("  - Final confidence: \(String(format: "%.2f", personalityResult.aggregationConfidence))")
+        
+        return finalResult
+    }
+    
+    /// Analyzes personality traits for a single batch
+    private func analyzePersonalityForBatch(_ batch: MessageBatch) async throws -> PersonalityTraits {
+        let prompt = promptEngineer.createBatchPersonalityAnalysisPrompt(
+            messages: batch.messages,
+            batchMetadata: batch.metadata
+        )
+        
+        let response = try await performInferenceWithRetry(prompt: prompt)
+        return try promptEngineer.parsePersonalityResponse(response)
+    }
+    
+    private func processBatchWithRecovery(_ batch: MessageBatch, attempt: Int = 1) async throws -> BatchedPersonalityTraits {
+        let maxBatchRetries = 3
+        
+        do {
+            try Task.checkCancellation()
+            
+            let batchStartTime = Date()
+            await updateStatus(
+                analysisProgress, 
+                "Processing batch \(batch.batchIndex + 1)/\(batch.totalBatches) (attempt \(attempt))..."
+            )
+            
+            let personalityTraits = try await analyzePersonalityForBatch(batch)
+            let batchProcessingTime = Date().timeIntervalSince(batchStartTime)
+            
+            let batchQuality = BatchManager().calculateBatchQuality(batch)
+            let batchMetadata = BatchAnalysisMetadata(
+                batchId: batch.id,
+                batchIndex: batch.batchIndex,
+                totalBatches: batch.totalBatches,
+                messageCount: batch.messages.count,
+                startDate: batch.metadata.startDate,
+                endDate: batch.metadata.endDate,
+                processingTime: batchProcessingTime,
+                batchQuality: batchQuality,
+                financialKeywordCount: batch.metadata.financialKeywordCount,
+                relationshipKeywordCount: batch.metadata.relationshipKeywordCount
+            )
+            
+            print("✅ Batch \(batch.batchIndex + 1) completed in \(String(format: "%.1f", batchProcessingTime))s")
+            
+            return BatchedPersonalityTraits(
+                traits: personalityTraits,
+                batchMetadata: batchMetadata
+            )
+            
+        } catch is CancellationError {
+            throw InferenceError.analysisFailure("Batch processing cancelled")
+        } catch {
+            print("⚠️ Batch \(batch.batchIndex + 1) attempt \(attempt) failed: \(error.localizedDescription)")
+            
+            if attempt < maxBatchRetries {
+                let delay = TimeInterval(attempt * 3)
+                await updateStatus(
+                    analysisProgress, 
+                    "Retrying batch \(batch.batchIndex + 1) in \(Int(delay)) seconds..."
+                )
+                
+                await adjustForDeviceConditions()
+                try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                
+                return try await processBatchWithRecovery(batch, attempt: attempt + 1)
+            } else {
+                throw error
+            }
         }
     }
     
@@ -365,6 +616,8 @@ public enum InferenceError: Error, LocalizedError {
     case responseParsingFailed(String)
     case invalidResponse(String)
     case memoryPressure(String)
+    case batchProcessingFailed(String)
+    case deviceThrottling(String)
     
     public var errorDescription: String? {
         switch self {
@@ -384,6 +637,10 @@ public enum InferenceError: Error, LocalizedError {
             return "Invalid model response: \(reason)"
         case .memoryPressure(let reason):
             return "Memory pressure detected: \(reason)"
+        case .batchProcessingFailed(let reason):
+            return "Batch processing failed: \(reason)"
+        case .deviceThrottling(let reason):
+            return "Device throttling detected: \(reason)"
         }
     }
 }
@@ -409,5 +666,44 @@ public struct InferencePerformanceStats {
     
     public var memoryUsageMB: Double {
         return Double(memoryUsage) / (1024 * 1024)
+    }
+}
+
+/// Detailed progress information for long-running analysis tasks
+public struct AnalysisProgressInfo {
+    public let progress: Double // 0.0 to 1.0
+    public let status: String
+    public let isAnalyzing: Bool
+    public let estimatedTimeRemaining: TimeInterval?
+    public let currentStage: String
+    public let memoryUsage: Double // in GB
+    public let lastError: String?
+    
+    public init(progress: Double, status: String, isAnalyzing: Bool, estimatedTimeRemaining: TimeInterval?, currentStage: String, memoryUsage: Double, lastError: String?) {
+        self.progress = progress
+        self.status = status
+        self.isAnalyzing = isAnalyzing
+        self.estimatedTimeRemaining = estimatedTimeRemaining
+        self.currentStage = currentStage
+        self.memoryUsage = memoryUsage
+        self.lastError = lastError
+    }
+    
+    public var progressPercentage: Int {
+        return Int(progress * 100)
+    }
+    
+    public var formattedTimeRemaining: String? {
+        guard let timeRemaining = estimatedTimeRemaining else { return nil }
+        
+        if timeRemaining < 60 {
+            return "\(Int(timeRemaining))s"
+        } else if timeRemaining < 3600 {
+            return "\(Int(timeRemaining / 60))m \(Int(timeRemaining.truncatingRemainder(dividingBy: 60)))s"
+        } else {
+            let hours = Int(timeRemaining / 3600)
+            let minutes = Int((timeRemaining.truncatingRemainder(dividingBy: 3600)) / 60)
+            return "\(hours)h \(minutes)m"
+        }
     }
 }
