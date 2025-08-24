@@ -10,10 +10,12 @@ import SwiftUI
 @main
 struct message_creditApp: App {
     @StateObject private var shortcutsManager = ShortcutsManager()
+    let persistenceController = PersistenceController.shared
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
+                .environment(\.managedObjectContext, persistenceController.container.viewContext)
                 .environmentObject(shortcutsManager)
                 .onOpenURL { url in
                     shortcutsManager.handleIncomingURL(url)

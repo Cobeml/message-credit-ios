@@ -13,27 +13,31 @@ struct ContentView: View {
     @State private var analysisResult: AnalysisResult?
     @State private var isAnalyzing = false
     @State private var showingFilePicker = false
-    @State private var showingShortcutsHelp = false
+    
     @State private var selectedFileInfo: FileInfo?
     @State private var fileParsingStatus: FileParsingStatus = .none
-    @StateObject private var inferenceEngine = MLXInferenceEngine()
+    @State private var inferenceEngine: MLXInferenceEngine?
+    @StateObject private var presetManager = PresetDataManager()
+    @State private var showingPresetMenu = false
+    @State private var showingLoadingView = false
+    @State private var showingAnalyticsView = false
     
     @EnvironmentObject private var shortcutsManager: ShortcutsManager
     
     // MARK: - Section Builders
     private func headerSection() -> some View {
-        VStack(spacing: 8) {
-            Image(systemName: "shield.checkered")
-                .font(.system(size: 60))
-                .foregroundColor(.blue)
+        VStack(spacing: 12) {
+            Text("Integrate your messages to get your score")
+                .font(.title2)
+                .fontWeight(.semibold)
+                .foregroundColor(.white)
+                .multilineTextAlignment(.center)
             
-            Text("Privacy Credit Analyzer")
-                .font(.title)
-                .fontWeight(.bold)
-            
-            Text("Secure on-device credit analysis")
-                .font(.caption)
-                .foregroundColor(.secondary)
+            Text("🔒 All analysis happens on your device - no data is sent off your local device")
+                .font(.subheadline)
+                .foregroundColor(.white.opacity(0.8))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
         }
         .padding(.top)
     }
@@ -44,62 +48,44 @@ struct ContentView: View {
                 .font(.headline)
             
             // Input method selector
-            VStack(spacing: 12) {
-                HStack(spacing: 12) {
-                    Button(action: { showingShortcutsHelp = true }) {
-                        HStack {
-                            Image(systemName: "shortcuts")
-                            Text("iOS Shortcuts")
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.purple.opacity(0.1))
-                        .foregroundColor(.purple)
-                        .cornerRadius(6)
-                    }
-                    
+            VStack(spacing: 8) {
+                HStack(spacing: 8) {
                     Button(action: { showingFilePicker = true }) {
-                        HStack {
+                        HStack(spacing: 4) {
                             Image(systemName: "doc.text")
-                            Text("Import File")
+                                .font(.caption)
+                            Text("Import")
+                                .font(.caption)
+                                .fontWeight(.medium)
                         }
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, 10)
                         .padding(.vertical, 6)
                         .background(Color.blue.opacity(0.1))
                         .foregroundColor(.blue)
                         .cornerRadius(6)
                     }
                     
+                    Button(action: { showingPresetMenu = true }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "flask")
+                                .font(.caption)
+                            Text("Sample")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.green.opacity(0.1))
+                        .foregroundColor(.green)
+                        .cornerRadius(6)
+                    }
+                    
                     Text("or enter manually:")
                         .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                
-                // Shortcuts status
-                if shortcutsManager.isProcessingShortcutData {
-                    HStack {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                        Text("Processing Shortcut data...")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                } else if let error = shortcutsManager.lastShortcutError {
-                    HStack {
-                        Image(systemName: error.contains("Sampled") ? "info.circle" : "exclamationmark.triangle")
-                            .foregroundColor(error.contains("Sampled") ? .orange : .red)
-                        Text(error)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                } else if let validation = shortcutsManager.validationResult {
-                    HStack {
-                        Image(systemName: "checkmark.circle")
-                            .foregroundColor(validation.statusColor)
-                        Text(validation.statusMessage)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
+                        .foregroundColor(.white.opacity(0.7))
+                        .padding(.leading, 4)
+                    
+                    Spacer()
                 }
             }
             
@@ -108,21 +94,22 @@ struct ContentView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Image(systemName: "doc.text")
-                            .foregroundColor(.blue)
+                            .foregroundColor(.white)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(fileInfo.name)
                                 .font(.caption)
                                 .fontWeight(.medium)
+                                .foregroundColor(.white)
                             Text("\(ByteCountFormatter.string(fromByteCount: fileInfo.size, countStyle: .file)) • \(fileInfo.type)")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(.white.opacity(0.7))
                         }
                         Spacer()
                         Button("Clear") {
                             clearFileSelection()
                         }
                         .font(.caption)
-                        .foregroundColor(.red)
+                        .foregroundColor(.red.opacity(0.8))
                     }
                     
                     // Parsing status
@@ -142,23 +129,23 @@ struct ContentView: View {
                     }
                 }
                 .padding(12)
-                .background(Color(.systemGray6))
+                .background(Color.white.opacity(0.1))
                 .cornerRadius(8)
             }
             
             TextEditor(text: $inputText)
                 .frame(minHeight: 120)
                 .padding(8)
-                .background(Color(.systemGray6))
+                .background(Color.white.opacity(0.1))
                 .cornerRadius(8)
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color(.systemGray4), lineWidth: 1)
+                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
                 )
+                .foregroundColor(.white)
+                .colorScheme(.dark)
             
-            Text(selectedFileInfo != nil ? "File content loaded above. You can edit or add more messages." : "Enter messages to analyze personality traits and trustworthiness")
-                .font(.caption)
-                .foregroundColor(.secondary)
+            
         }
         .padding(.horizontal)
     }
@@ -176,9 +163,21 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity)
             .padding()
-            .background(inputText.isEmpty ? Color(.systemGray4) : Color.blue)
+            .background(
+                inputText.isEmpty ? 
+                LinearGradient(
+                    colors: [Color.white.opacity(0.2), Color.white.opacity(0.2)],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                ) :
+                LinearGradient(
+                    colors: [Color.blue, Color.purple],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
             .foregroundColor(.white)
-            .cornerRadius(10)
+            .cornerRadius(12)
         }
         .disabled(inputText.isEmpty || isAnalyzing)
         .padding(.horizontal)
@@ -191,12 +190,14 @@ struct ContentView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Analysis Results")
                             .font(.headline)
+                            .foregroundColor(.white)
                         
                         // Personality Traits
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Personality Traits")
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
+                                .foregroundColor(.white)
                             
                             PersonalityTraitRow(name: "Openness", value: result.personalityTraits.openness)
                             PersonalityTraitRow(name: "Conscientiousness", value: result.personalityTraits.conscientiousness)
@@ -208,26 +209,31 @@ struct ContentView: View {
                                 Text("Confidence")
                                     .font(.caption)
                                 Spacer()
-                                Text("\(Int(result.personalityTraits.confidence * 100))%")
+                                Text(result.personalityTraits.confidence.isNaN ? "N/A" : "\(Int(result.personalityTraits.confidence * 100))%")
                                     .font(.caption)
                                     .fontWeight(.medium)
                                     .foregroundColor(.blue)
                             }
                         }
                         .padding()
-                        .background(Color(.systemGray6))
+                        .background(Color.white.opacity(0.1))
                         .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                        )
                         
                         // Trustworthiness Score
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Trustworthiness Score")
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
+                                .foregroundColor(.white)
                             
                             HStack {
                                 Text("Score:")
                                 Spacer()
-                                Text("\(Int(result.trustworthinessScore.score * 100))%")
+                                Text(result.trustworthinessScore.score.isNaN ? "N/A" : "\(Int(result.trustworthinessScore.score * 100))%")
                                     .fontWeight(.bold)
                                     .foregroundColor(scoreColor(result.trustworthinessScore.score))
                             }
@@ -248,7 +254,8 @@ struct ContentView: View {
                                         Text(key.replacingOccurrences(of: "_", with: " ").capitalized)
                                             .font(.caption)
                                         Spacer()
-                                        Text("\(Int((result.trustworthinessScore.factors[key] ?? 0) * 100))%")
+                                        let factorValue = result.trustworthinessScore.factors[key] ?? 0
+                                        Text(factorValue.isNaN ? "N/A" : "\(Int(factorValue * 100))%")
                                             .font(.caption)
                                             .fontWeight(.medium)
                                     }
@@ -256,14 +263,19 @@ struct ContentView: View {
                             }
                         }
                         .padding()
-                        .background(Color(.systemGray6))
+                        .background(Color.white.opacity(0.1))
                         .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                        )
                         
                         // Processing Info
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Processing Info")
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
+                                .foregroundColor(.white)
                             
                             Text("Messages analyzed: \(result.messageCount)")
                             Text("Processing time: \(String(format: "%.2f", result.processingTime))s")
@@ -272,7 +284,7 @@ struct ContentView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .padding()
-                        .background(Color(.systemGray6))
+                        .background(Color.white.opacity(0.1))
                         .cornerRadius(8)
                     }
                     .padding(.horizontal)
@@ -283,15 +295,22 @@ struct ContentView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 20) {
-                headerSection()
-                inputSection()
-                analyzeButtonSection()
-                resultsSection()
+            ZStack {
+                // Floating orbs background
+                FloatingOrbsBackground()
                 
-                Spacer()
+                VStack(spacing: 20) {
+                    headerSection()
+                    inputSection()
+                    analyzeButtonSection()
+                    
+                    Spacer()
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    hideKeyboard()
+                }
             }
-            .navigationTitle("Privacy Credit Analyzer")
             .navigationBarTitleDisplayMode(.inline)
         }
         .fileImporter(
@@ -301,24 +320,22 @@ struct ContentView: View {
         ) { result in
             handleFileImport(result)
         }
-        .sheet(isPresented: $showingShortcutsHelp) {
-            ShortcutInstallationGuide()
-                .environmentObject(shortcutsManager)
-        }
-        .onChange(of: shortcutsManager.shortcutMessages) { oldValue, newValue in
-            if !newValue.isEmpty {
-                inputText = shortcutsManager.messagesToDisplayText(newValue)
-                shortcutsManager.clearShortcutData()
-            }
+        .confirmationDialog("Load Sample Data", isPresented: $showingPresetMenu, titleVisibility: .visible) {
+            createPresetButtons()
+        } message: {
+            Text("Choose a preset to test the analysis functionality")
         }
         .onAppear {
-            // Initialize the inference engine in the background
-            Task {
-                do {
-                    try await inferenceEngine.initialize()
-                } catch {
-                    print("Failed to initialize inference engine: \(error)")
-                    // Continue with mock functionality as fallback
+            // Safely initialize the inference engine in the background
+            initializeInferenceEngine()
+        }
+        .sheet(isPresented: $showingLoadingView) {
+            LoadingView()
+        }
+        .sheet(isPresented: $showingAnalyticsView) {
+            if let result = analysisResult {
+                AnalyticsDetailView(result: result) {
+                    showingAnalyticsView = false
                 }
             }
         }
@@ -326,6 +343,7 @@ struct ContentView: View {
     
     private func analyzeMessages() {
         isAnalyzing = true
+        showingLoadingView = true
         
         Task {
             do {
@@ -343,13 +361,15 @@ struct ContentView: View {
                 // Use the filtered messages for analysis
                 let messagesToAnalyze = filterResult.filteredMessages.isEmpty ? messages : filterResult.filteredMessages
                 
-                if inferenceEngine.isInitialized {
+                if let engine = inferenceEngine, engine.isInitialized {
                     // Use real MLX inference for personality and trustworthiness analysis
-                    let result = try await inferenceEngine.processInBackground(messages: messagesToAnalyze)
+                    let result = try await engine.processInBackground(messages: messagesToAnalyze)
                     
                     await MainActor.run {
                         analysisResult = result
                         isAnalyzing = false
+                        showingLoadingView = false
+                        showingAnalyticsView = true
                     }
                 } else {
                     // Fallback to enhanced mock analysis with real filtering data
@@ -383,6 +403,8 @@ struct ContentView: View {
                     )
                     
                     isAnalyzing = false
+                    showingLoadingView = false
+                    showingAnalyticsView = true
                 }
             }
         }
@@ -428,6 +450,8 @@ struct ContentView: View {
         await MainActor.run {
             analysisResult = result
             isAnalyzing = false
+            showingLoadingView = false
+            showingAnalyticsView = true
         }
     }
     
@@ -497,6 +521,9 @@ struct ContentView: View {
     }
     
     private func scoreColor(_ score: Double) -> Color {
+        if score.isNaN {
+            return .gray
+        }
         switch score {
         case 0.8...:
             return .green
@@ -505,6 +532,76 @@ struct ContentView: View {
         default:
             return .red
         }
+    }
+    
+    // MARK: - Preset Data Methods
+    
+    @ViewBuilder
+    private func createPresetButtons() -> some View {
+        let presetInfo = presetManager.getPresetInfo()
+        
+        ForEach(presetInfo, id: \.type.rawValue) { preset in
+            Button("\(preset.icon) \(preset.title)") {
+                loadPresetData(preset.type)
+            }
+        }
+        
+        Button("Cancel", role: .cancel) { }
+    }
+    
+    private func loadPresetData(_ type: PresetDataManager.PresetType) {
+        // Clear any existing data
+        clearFileSelection()
+        
+        // Load preset messages
+        let messages = presetManager.loadPresetMessages(type: type)
+        
+        // Convert to display format
+        inputText = presetManager.messagesToDisplayText(messages)
+        
+        // Show a brief status message
+        let preset = presetManager.getPresetInfo().first { $0.type == type }!
+        print("✅ Loaded \(preset.title): \(preset.messageCount) messages")
+        print("📊 Expected trustworthiness: \(String(format: "%.1f%%", preset.expectedScore * 100)) (\(preset.riskLevel))")
+    }
+    
+    private func initializeInferenceEngine() {
+        // Check if running in simulator
+        #if targetEnvironment(simulator)
+        print("📱 Running in iOS Simulator - MLX not supported")
+        print("✨ Using enhanced mock analysis for demonstration")
+        inferenceEngine = nil
+        return
+        #endif
+        
+        Task {
+            do {
+                // Only attempt to create the inference engine if we don't have one
+                if inferenceEngine == nil {
+                    print("🔄 Attempting to initialize MLX inference engine...")
+                    let engine = MLXInferenceEngine()
+                    
+                    // Try to initialize in a safe way
+                    try await engine.initialize()
+                    
+                    await MainActor.run {
+                        self.inferenceEngine = engine
+                        print("✅ MLX inference engine initialized successfully")
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.inferenceEngine = nil
+                    print("⚠️ MLX initialization failed: \(error)")
+                    print("📱 App will continue with enhanced mock analysis")
+                    print("ℹ️ This is normal on devices without MLX support")
+                }
+            }
+        }
+    }
+    
+    private func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }
 
@@ -516,27 +613,33 @@ struct PersonalityTraitRow: View {
         HStack {
             Text(name)
                 .font(.caption)
+                .foregroundColor(.white)
             Spacer()
             
             // Progress bar
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     Rectangle()
-                        .fill(Color(.systemGray5))
+                        .fill(Color.white.opacity(0.3))
                         .frame(height: 6)
                         .cornerRadius(3)
                     
                     Rectangle()
-                        .fill(Color.blue)
-                        .frame(width: geometry.size.width * value, height: 6)
+                        .fill(LinearGradient(
+                            colors: [.blue, .purple],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ))
+                        .frame(width: geometry.size.width * max(0, min(1, value.isNaN ? 0 : value)), height: 6)
                         .cornerRadius(3)
                 }
             }
             .frame(width: 80, height: 6)
             
-            Text("\(Int(value * 100))%")
+            Text(value.isNaN ? "N/A" : "\(Int(value * 100))%")
                 .font(.caption)
                 .fontWeight(.medium)
+                .foregroundColor(.white)
                 .frame(width: 35, alignment: .trailing)
         }
     }
@@ -580,6 +683,255 @@ enum FileParsingStatus {
             return .green
         case .error:
             return .red
+        }
+    }
+}
+
+
+// MARK: - Analytics Detail View
+struct AnalyticsDetailView: View {
+    let result: AnalysisResult
+    let onDismiss: () -> Void
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                // Floating orbs background
+                FloatingOrbsBackground()
+                
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // Header
+                        VStack(spacing: 10) {
+                            Image(systemName: "doc.text.magnifyingglass")
+                                .font(.system(size: 50))
+                                .foregroundColor(.white)
+                            
+                            Text("Credit Analysis Report")
+                                .font(.title)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                        }
+                        .padding(.top)
+                        
+                        // Credit Score Card
+                        creditScoreCard()
+                        
+                        // Personality Analysis
+                        personalityAnalysisCard()
+                        
+                        // Risk Factors
+                        riskFactorsCard()
+                        
+                        // Processing Details
+                        processingDetailsCard()
+                        
+                        Spacer(minLength: 100)
+                    }
+                    .padding()
+                }
+            }
+            .navigationTitle("Analysis Results")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        onDismiss()
+                    }
+                    .foregroundColor(.white)
+                }
+            }
+        }
+    }
+    
+    private func creditScoreCard() -> some View {
+        VStack(spacing: 15) {
+            Text("Credit Score")
+                .font(.headline)
+                .foregroundColor(.white)
+            
+            let creditScore = convertToCreditScore(result.trustworthinessScore.score)
+            
+            VStack(spacing: 5) {
+                Text("\(creditScore)")
+                    .font(.system(size: 60, weight: .bold, design: .rounded))
+                    .foregroundColor(creditScoreColor(creditScore))
+                
+                Text(creditScoreCategory(creditScore))
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white.opacity(0.8))
+            }
+            
+            Text(result.trustworthinessScore.explanation)
+                .font(.caption)
+                .foregroundColor(.white.opacity(0.7))
+                .multilineTextAlignment(.center)
+        }
+        .padding()
+        .background(Color.white.opacity(0.1))
+        .cornerRadius(15)
+        .overlay(
+            RoundedRectangle(cornerRadius: 15)
+                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+        )
+    }
+    
+    private func personalityAnalysisCard() -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Personality Analysis")
+                .font(.headline)
+                .foregroundColor(.white)
+            
+            PersonalityTraitRow(name: "Openness", value: result.personalityTraits.openness)
+            PersonalityTraitRow(name: "Conscientiousness", value: result.personalityTraits.conscientiousness)
+            PersonalityTraitRow(name: "Extraversion", value: result.personalityTraits.extraversion)
+            PersonalityTraitRow(name: "Agreeableness", value: result.personalityTraits.agreeableness)
+            PersonalityTraitRow(name: "Neuroticism", value: result.personalityTraits.neuroticism)
+            
+            HStack {
+                Text("Analysis Confidence:")
+                    .font(.caption)
+                    .foregroundColor(.white)
+                Spacer()
+                Text(result.personalityTraits.confidence.isNaN ? "N/A" : "\(Int(result.personalityTraits.confidence * 100))%")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.blue)
+            }
+        }
+        .padding()
+        .background(Color.white.opacity(0.1))
+        .cornerRadius(15)
+        .overlay(
+            RoundedRectangle(cornerRadius: 15)
+                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+        )
+    }
+    
+    private func riskFactorsCard() -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Risk Assessment Factors")
+                .font(.headline)
+                .foregroundColor(.white)
+            
+            if !result.trustworthinessScore.factors.isEmpty {
+                ForEach(Array(result.trustworthinessScore.factors.keys.sorted()), id: \.self) { key in
+                    let factorValue = result.trustworthinessScore.factors[key] ?? 0
+                    HStack {
+                        Text(key.replacingOccurrences(of: "_", with: " ").capitalized)
+                            .font(.caption)
+                            .foregroundColor(.white)
+                        Spacer()
+                        Text(factorValue.isNaN ? "N/A" : "\(Int(factorValue * 100))%")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(factorValue > 0.7 ? .green : factorValue > 0.4 ? .orange : .red)
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(Color.white.opacity(0.1))
+        .cornerRadius(15)
+        .overlay(
+            RoundedRectangle(cornerRadius: 15)
+                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+        )
+    }
+    
+    private func processingDetailsCard() -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Analysis Details")
+                .font(.headline)
+                .foregroundColor(.white)
+            
+            HStack {
+                Text("Messages Analyzed:")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.8))
+                Spacer()
+                Text("\(result.messageCount)")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+            }
+            
+            HStack {
+                Text("Processing Time:")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.8))
+                Spacer()
+                Text("\(String(format: "%.2f", result.processingTime))s")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+            }
+            
+            HStack {
+                Text("Analysis ID:")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.8))
+                Spacer()
+                Text("\(result.id.uuidString.prefix(8))...")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+            }
+        }
+        .padding()
+        .background(Color.white.opacity(0.1))
+        .cornerRadius(15)
+        .overlay(
+            RoundedRectangle(cornerRadius: 15)
+                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+        )
+    }
+    
+    // Helper functions for credit score conversion
+    private func convertToCreditScore(_ trustworthinessScore: Double) -> Int {
+        if trustworthinessScore.isNaN {
+            return 500 // Default middle score for NaN
+        }
+        
+        // Convert 0.0-1.0 trustworthiness to 300-850 credit score
+        let minScore = 300.0
+        let maxScore = 850.0
+        let range = maxScore - minScore
+        
+        let creditScore = minScore + (trustworthinessScore * range)
+        return Int(creditScore.rounded())
+    }
+    
+    private func creditScoreColor(_ score: Int) -> Color {
+        switch score {
+        case 750...850:
+            return .green
+        case 670..<750:
+            return .blue
+        case 580..<670:
+            return .orange
+        case 300..<580:
+            return .red
+        default:
+            return .gray
+        }
+    }
+    
+    private func creditScoreCategory(_ score: Int) -> String {
+        switch score {
+        case 800...850:
+            return "Exceptional"
+        case 740..<800:
+            return "Very Good"
+        case 670..<740:
+            return "Good"
+        case 580..<670:
+            return "Fair"
+        case 300..<580:
+            return "Poor"
+        default:
+            return "Unknown"
         }
     }
 }
