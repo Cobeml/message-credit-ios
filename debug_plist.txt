@@ -1,0 +1,447 @@
+{
+  "WFQuickActionSurfaces" => [
+  ]
+  "WFWorkflowActions" => [
+    0 => {
+      "WFWorkflowActionIdentifier" => "is.workflow.actions.comment"
+      "WFWorkflowActionParameters" => {
+        "WFCommentActionText" => "Privacy Credit Analyzer - Deep Analysis
+Extracts messages from the last 90 days (~5,000 messages) for comprehensive credit analysis.
+Processing time: ~5-10 minutes
+Memory usage: ~50-75MB"
+      }
+    }
+    1 => {
+      "WFWorkflowActionIdentifier" => "is.workflow.actions.ask"
+      "WFWorkflowActionParameters" => {
+        "WFAskActionDefaultAnswer" => "Yes"
+        "WFAskActionDefaultAnswerEnabled" => 1
+        "WFAskActionPrompt" => "This shortcut will access your Messages from the last 90 days to analyze financial patterns. This is a comprehensive analysis that may take 5-10 minutes to process. Only processed results (not raw messages) will be shared with the Privacy Credit Analyzer app. Continue?"
+        "WFInputType" => "Text"
+      }
+    }
+    2 => {
+      "WFWorkflowActionIdentifier" => "is.workflow.actions.conditional"
+      "WFWorkflowActionParameters" => {
+        "WFConditionalActionString" => "Yes"
+        "WFControlFlowMode" => 0
+      }
+    }
+    3 => {
+      "WFWorkflowActionIdentifier" => "is.workflow.actions.getmessages"
+      "WFWorkflowActionParameters" => {
+        "WFGetMessagesActionDateRange" => {
+          "WFDateRangeEnd" => {
+            "WFDateActionMode" => "Current Date"
+          }
+          "WFDateRangeStart" => {
+            "WFDateActionMode" => "Relative"
+            "WFRelativeDateActionDate" => {
+              "Value" => -90
+              "WFQuantityType" => "Days"
+              "WFSerializationType" => "WFQuantityFieldValue"
+            }
+          }
+        }
+        "WFGetMessagesActionLimit" => 5000
+        "WFGetMessagesActionRecipient" => ""
+        "WFGetMessagesActionSender" => ""
+      }
+    }
+    4 => {
+      "WFWorkflowActionIdentifier" => "is.workflow.actions.filter.messages"
+      "WFWorkflowActionParameters" => {
+        "WFContentItemFilter" => {
+          "Value" => {
+            "WFActionParameterFilterPrefix" => 1
+            "WFActionParameterFilterTemplates" => [
+              0 => {
+                "Operator" => 4
+                "Property" => "Content"
+                "Removable" => 1
+                "Values" => {
+                  "Text" => "money|loan|payment|bank|credit|debt|mortgage|finance|budget|savings|investment|cash|dollar|pay|owe|borrow|lend|interest|account|balance|cost|price|buy|sell|purchase|expense|\$"
+                }
+              }
+            ]
+          }
+          "WFSerializationType" => "WFContentPredicateTableTemplate"
+        }
+      }
+    }
+    5 => {
+      "WFWorkflowActionIdentifier" => "is.workflow.actions.getitemfromlist"
+      "WFWorkflowActionParameters" => {
+        "WFItemRangeEnd" => 5000
+        "WFItemRangeStart" => 1
+        "WFItemSpecifier" => "First Item"
+      }
+    }
+    6 => {
+      "WFWorkflowActionIdentifier" => "is.workflow.actions.repeat.each"
+      "WFWorkflowActionParameters" => {
+        "WFControlFlowMode" => 0
+      }
+    }
+    7 => {
+      "WFWorkflowActionIdentifier" => "is.workflow.actions.getdetailsofmessages"
+      "WFWorkflowActionParameters" => {
+        "WFGetDetailsOfMessagesActionDetail" => "Content"
+      }
+    }
+    8 => {
+      "WFWorkflowActionIdentifier" => "is.workflow.actions.getdetailsofmessages"
+      "WFWorkflowActionParameters" => {
+        "WFGetDetailsOfMessagesActionDetail" => "Date Sent"
+      }
+    }
+    9 => {
+      "WFWorkflowActionIdentifier" => "is.workflow.actions.getdetailsofmessages"
+      "WFWorkflowActionParameters" => {
+        "WFGetDetailsOfMessagesActionDetail" => "Sender"
+      }
+    }
+    10 => {
+      "WFWorkflowActionIdentifier" => "is.workflow.actions.getdetailsofmessages"
+      "WFWorkflowActionParameters" => {
+        "WFGetDetailsOfMessagesActionDetail" => "Recipients"
+      }
+    }
+    11 => {
+      "WFWorkflowActionIdentifier" => "is.workflow.actions.dictionary"
+      "WFWorkflowActionParameters" => {
+        "WFItems" => {
+          "Value" => {
+            "WFDictionaryFieldValueItems" => [
+              0 => {
+                "WFItemType" => 0
+                "WFKey" => {
+                  "Value" => {
+                    "attachmentsByRange" => {
+                    }
+                    "string" => "content"
+                  }
+                  "WFSerializationType" => "WFTextTokenString"
+                }
+                "WFValue" => {
+                  "Value" => {
+                    "attachmentsByRange" => {
+                      "{0, 1}" => {
+                        "OutputName" => "Details of Messages"
+                        "OutputUUID" => "Content-Output"
+                        "Type" => "ActionOutput"
+                      }
+                    }
+                    "string" => "￼"
+                  }
+                  "WFSerializationType" => "WFTextTokenString"
+                }
+              }
+              1 => {
+                "WFItemType" => 0
+                "WFKey" => {
+                  "Value" => {
+                    "attachmentsByRange" => {
+                    }
+                    "string" => "timestamp"
+                  }
+                  "WFSerializationType" => "WFTextTokenString"
+                }
+                "WFValue" => {
+                  "Value" => {
+                    "attachmentsByRange" => {
+                      "{0, 1}" => {
+                        "OutputName" => "Details of Messages"
+                        "OutputUUID" => "DateSent-Output"
+                        "Type" => "ActionOutput"
+                      }
+                    }
+                    "string" => "￼"
+                  }
+                  "WFSerializationType" => "WFTextTokenString"
+                }
+              }
+              2 => {
+                "WFItemType" => 0
+                "WFKey" => {
+                  "Value" => {
+                    "attachmentsByRange" => {
+                    }
+                    "string" => "sender"
+                  }
+                  "WFSerializationType" => "WFTextTokenString"
+                }
+                "WFValue" => {
+                  "Value" => {
+                    "attachmentsByRange" => {
+                      "{0, 1}" => {
+                        "OutputName" => "Details of Messages"
+                        "OutputUUID" => "Sender-Output"
+                        "Type" => "ActionOutput"
+                      }
+                    }
+                    "string" => "￼"
+                  }
+                  "WFSerializationType" => "WFTextTokenString"
+                }
+              }
+              3 => {
+                "WFItemType" => 0
+                "WFKey" => {
+                  "Value" => {
+                    "attachmentsByRange" => {
+                    }
+                    "string" => "recipient"
+                  }
+                  "WFSerializationType" => "WFTextTokenString"
+                }
+                "WFValue" => {
+                  "Value" => {
+                    "attachmentsByRange" => {
+                      "{0, 1}" => {
+                        "OutputName" => "Details of Messages"
+                        "OutputUUID" => "Recipients-Output"
+                        "Type" => "ActionOutput"
+                      }
+                    }
+                    "string" => "￼"
+                  }
+                  "WFSerializationType" => "WFTextTokenString"
+                }
+              }
+              4 => {
+                "WFItemType" => 0
+                "WFKey" => {
+                  "Value" => {
+                    "attachmentsByRange" => {
+                    }
+                    "string" => "id"
+                  }
+                  "WFSerializationType" => "WFTextTokenString"
+                }
+                "WFValue" => {
+                  "Value" => {
+                    "attachmentsByRange" => {
+                      "{0, 1}" => {
+                        "OutputName" => "UUID"
+                        "OutputUUID" => "UUID-Output"
+                        "Type" => "ActionOutput"
+                      }
+                    }
+                    "string" => "￼"
+                  }
+                  "WFSerializationType" => "WFTextTokenString"
+                }
+              }
+              5 => {
+                "WFItemType" => 0
+                "WFKey" => {
+                  "Value" => {
+                    "attachmentsByRange" => {
+                    }
+                    "string" => "isFromUser"
+                  }
+                  "WFSerializationType" => "WFTextTokenString"
+                }
+                "WFValue" => {
+                  "Value" => {
+                    "attachmentsByRange" => {
+                    }
+                    "string" => "true"
+                  }
+                  "WFSerializationType" => "WFTextTokenString"
+                }
+              }
+            ]
+          }
+          "WFSerializationType" => "WFDictionaryFieldValue"
+        }
+      }
+    }
+    12 => {
+      "WFWorkflowActionIdentifier" => "is.workflow.actions.addtolist"
+      "WFWorkflowActionParameters" => {
+      }
+    }
+    13 => {
+      "WFWorkflowActionIdentifier" => "is.workflow.actions.repeat.each"
+      "WFWorkflowActionParameters" => {
+        "WFControlFlowMode" => 2
+      }
+    }
+    14 => {
+      "WFWorkflowActionIdentifier" => "is.workflow.actions.dictionary"
+      "WFWorkflowActionParameters" => {
+        "WFItems" => {
+          "Value" => {
+            "WFDictionaryFieldValueItems" => [
+              0 => {
+                "WFItemType" => 0
+                "WFKey" => {
+                  "Value" => {
+                    "attachmentsByRange" => {
+                    }
+                    "string" => "messages"
+                  }
+                  "WFSerializationType" => "WFTextTokenString"
+                }
+                "WFValue" => {
+                  "Value" => {
+                    "attachmentsByRange" => {
+                      "{0, 1}" => {
+                        "OutputName" => "List"
+                        "OutputUUID" => "List-Output"
+                        "Type" => "ActionOutput"
+                      }
+                    }
+                    "string" => "￼"
+                  }
+                  "WFSerializationType" => "WFTextTokenString"
+                }
+              }
+              1 => {
+                "WFItemType" => 0
+                "WFKey" => {
+                  "Value" => {
+                    "attachmentsByRange" => {
+                    }
+                    "string" => "extractionDate"
+                  }
+                  "WFSerializationType" => "WFTextTokenString"
+                }
+                "WFValue" => {
+                  "Value" => {
+                    "attachmentsByRange" => {
+                      "{0, 1}" => {
+                        "OutputName" => "Current Date"
+                        "OutputUUID" => "CurrentDate-Output"
+                        "Type" => "ActionOutput"
+                      }
+                    }
+                    "string" => "￼"
+                  }
+                  "WFSerializationType" => "WFTextTokenString"
+                }
+              }
+              2 => {
+                "WFItemType" => 0
+                "WFKey" => {
+                  "Value" => {
+                    "attachmentsByRange" => {
+                    }
+                    "string" => "performanceTier"
+                  }
+                  "WFSerializationType" => "WFTextTokenString"
+                }
+                "WFValue" => {
+                  "Value" => {
+                    "attachmentsByRange" => {
+                    }
+                    "string" => "deep"
+                  }
+                  "WFSerializationType" => "WFTextTokenString"
+                }
+              }
+              3 => {
+                "WFItemType" => 0
+                "WFKey" => {
+                  "Value" => {
+                    "attachmentsByRange" => {
+                    }
+                    "string" => "version"
+                  }
+                  "WFSerializationType" => "WFTextTokenString"
+                }
+                "WFValue" => {
+                  "Value" => {
+                    "attachmentsByRange" => {
+                    }
+                    "string" => "1.0.0"
+                  }
+                  "WFSerializationType" => "WFTextTokenString"
+                }
+              }
+            ]
+          }
+          "WFSerializationType" => "WFDictionaryFieldValue"
+        }
+      }
+    }
+    15 => {
+      "WFWorkflowActionIdentifier" => "is.workflow.actions.getjsonfromobject"
+      "WFWorkflowActionParameters" => {
+      }
+    }
+    16 => {
+      "WFWorkflowActionIdentifier" => "is.workflow.actions.openurl"
+      "WFWorkflowActionParameters" => {
+        "WFInput" => {
+          "Value" => {
+            "attachmentsByRange" => {
+              "{29, 1}" => {
+                "OutputName" => "JSON from Dictionary"
+                "OutputUUID" => "JSON-Output"
+                "Type" => "ActionOutput"
+              }
+            }
+            "string" => "privacycredit://import?data=￼"
+          }
+          "WFSerializationType" => "WFTextTokenString"
+        }
+      }
+    }
+    17 => {
+      "WFWorkflowActionIdentifier" => "is.workflow.actions.conditional"
+      "WFWorkflowActionParameters" => {
+        "WFControlFlowMode" => 1
+      }
+    }
+    18 => {
+      "WFWorkflowActionIdentifier" => "is.workflow.actions.shownotification"
+      "WFWorkflowActionParameters" => {
+        "WFNotificationActionBody" => "Permission denied. Please grant access to Messages to use this shortcut."
+        "WFNotificationActionTitle" => "Privacy Credit Analyzer"
+      }
+    }
+    19 => {
+      "WFWorkflowActionIdentifier" => "is.workflow.actions.conditional"
+      "WFWorkflowActionParameters" => {
+        "WFControlFlowMode" => 2
+      }
+    }
+  ]
+  "WFWorkflowClientVersion" => "2605.0.5"
+  "WFWorkflowHasOutputFallback" => 0
+  "WFWorkflowHasShortcutInputVariables" => 0
+  "WFWorkflowIcon" => {
+    "WFWorkflowIconGlyphNumber" => 61440
+    "WFWorkflowIconStartColor" => 2071128575
+  }
+  "WFWorkflowImportQuestions" => [
+  ]
+  "WFWorkflowInputContentItemClasses" => [
+    0 => "WFAppStoreAppContentItem"
+    1 => "WFArticleContentItem"
+    2 => "WFContactContentItem"
+    3 => "WFDateContentItem"
+    4 => "WFEmailAddressContentItem"
+    5 => "WFGenericFileContentItem"
+    6 => "WFImageContentItem"
+    7 => "WFiTunesProductContentItem"
+    8 => "WFLocationContentItem"
+    9 => "WFDCMapsLinkContentItem"
+    10 => "WFAVAssetContentItem"
+    11 => "WFPDFContentItem"
+    12 => "WFPhoneNumberContentItem"
+    13 => "WFRichTextContentItem"
+    14 => "WFSafariWebPageContentItem"
+    15 => "WFStringContentItem"
+    16 => "WFURLContentItem"
+  ]
+  "WFWorkflowMinimumClientVersion" => 900
+  "WFWorkflowMinimumClientVersionString" => "900"
+  "WFWorkflowOutputContentItemClasses" => [
+  ]
+  "WFWorkflowTypes" => [
+  ]
+}

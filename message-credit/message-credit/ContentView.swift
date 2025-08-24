@@ -9,6 +9,21 @@ import SwiftUI
 import PrivacyCreditAnalyzer
 
 struct ContentView: View {
+    
+    // MARK: - Device Compatibility Check
+    
+    /// Checks if device has sufficient memory for MLX operations
+    private static var isDeviceSupported: Bool {
+        let physicalMemory = ProcessInfo.processInfo.physicalMemory
+        let requiredMemory: UInt64 = 6_000_000_000 // 6GB minimum
+        
+        print("🔍 Device Memory Check:")
+        print("   Physical Memory: \(String(format: "%.1f", Double(physicalMemory) / 1_000_000_000))GB")
+        print("   Required Memory: \(String(format: "%.1f", Double(requiredMemory) / 1_000_000_000))GB")
+        print("   Device Supported: \(physicalMemory >= requiredMemory)")
+        
+        return physicalMemory >= requiredMemory
+    }
     @State private var inputText = ""
     @State private var analysisResult: AnalysisResult?
     @State private var isAnalyzing = false
@@ -16,7 +31,7 @@ struct ContentView: View {
     
     @State private var selectedFileInfo: FileInfo?
     @State private var fileParsingStatus: FileParsingStatus = .none
-    @State private var inferenceEngine: MLXInferenceEngine?
+    @State private var inferenceEngine: MLXInferenceEngine? = Self.isDeviceSupported ? MLXInferenceEngine() : nil
     @StateObject private var presetManager = PresetDataManager()
     @State private var showingPresetMenu = false
     @State private var showingLoadingView = false
@@ -32,6 +47,33 @@ struct ContentView: View {
                 .fontWeight(.semibold)
                 .foregroundColor(.white)
                 .multilineTextAlignment(.center)
+            
+            if !Self.isDeviceSupported {
+                // Show warning for low-memory devices but allow continued use
+                VStack(spacing: 8) {
+                    HStack {
+                        Image(systemName: "info.circle.fill")
+                            .foregroundColor(.orange)
+                        Text("Limited Device Mode")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.orange)
+                    }
+                    
+                    Text("Using mock analysis mode - your device has insufficient RAM for full MLX processing")
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.8))
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color.orange.opacity(0.2))
+                .cornerRadius(10)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.orange.opacity(0.4), lineWidth: 1)
+                )
+            }
             
             Text("🔒 All analysis happens on your device - no data is sent off your local device")
                 .font(.subheadline)
@@ -144,10 +186,12 @@ struct ContentView: View {
                 )
                 .foregroundColor(.white)
                 .colorScheme(.dark)
+                .frame(maxHeight: .infinity, alignment: .top)
             
             
         }
         .padding(.horizontal)
+        .frame(maxHeight: .infinity, alignment: .top)
     }
     
     private func analyzeButtonSection() -> some View {
@@ -303,9 +347,8 @@ struct ContentView: View {
                     headerSection()
                     inputSection()
                     analyzeButtonSection()
-                    
-                    Spacer()
                 }
+                .frame(maxHeight: .infinity, alignment: .top)
                 .contentShape(Rectangle())
                 .onTapGesture {
                     hideKeyboard()

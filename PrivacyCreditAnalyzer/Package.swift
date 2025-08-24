@@ -15,8 +15,11 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ml-explore/mlx-swift.git", from: "0.18.0"),
+        // Cryptographic and verification dependencies
+        // Note: CryptoKit and DeviceCheck are system frameworks, not SPM packages
         // Future dependencies:
         // - PostgresClientKit for database communication
+        // - EZKL Swift wrapper for Zero-Knowledge Proofs (to be added in Phase 3)
     ],
     targets: [
         .target(
